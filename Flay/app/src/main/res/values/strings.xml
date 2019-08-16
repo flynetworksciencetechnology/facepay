@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">飞付</string>
+    <string name="payment">请等待收银员输入支付金额</string>
+</resources>
