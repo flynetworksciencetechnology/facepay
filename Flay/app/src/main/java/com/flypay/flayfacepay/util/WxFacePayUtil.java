@@ -1,10 +1,12 @@
 package com.flypay.flayfacepay.util;
 
 import android.app.Application;
+import android.content.Context;
 import android.os.RemoteException;
 import com.flypay.flayfacepay.activity.BaseActivity;
 import com.flypay.flayfacepay.conf.StaticConf;
 import com.flypay.flayfacepay.exception.MyException;
+import com.flypay.flayfacepay.job.ShowDialogJOB;
 import com.tencent.mars.xlog.Log;
 import com.tencent.wxpayface.IWxPayfaceCallback;
 import com.tencent.wxpayface.WxPayFace;
@@ -26,21 +28,27 @@ public class WxFacePayUtil {
     private static final String TAG = CommonUtil.getTag();
     private static String rawdata;
     //初始化
-    public static void initWxFacePay(Application app){
+    public static boolean initWxFacePay(final Application app){
         final String tag = getTag();
         Log.i(TAG,"初始化微信人脸支付开始");
+        final boolean[] flag = {false};
         WxPayFace.getInstance().initWxpayface(app.getApplicationContext(), new IWxPayfaceCallback() {
             @Override
             public void response(Map info) throws RemoteException {
                 //inti结果
                 if(!isSuccessInfo(info,tag)){
                     //初始化失败
+                    ShowDialogJOB show = new ShowDialogJOB("初始化微信刷脸支付失败,请检查网络",app.getApplicationContext());
+                    Thread t = new Thread(show);
+                    t.start();
                 }else{
                     //执行自定义逻辑
+                    flag[0] = true;
+                    Log.i(TAG,"初始化微信人脸支付成功");
                 }
             }
         });
-
+        return flag[0];
     }
     public static void getWxpayfaceRawdata() {
         final String tag = getTag();
@@ -57,6 +65,7 @@ public class WxFacePayUtil {
                     new RuntimeException("调用返回非成功信息,return_msg:" + msg + "   ").printStackTrace();
                     return ;
                 }
+                Log.i(TAG,"获取rawdata成功" +rawdata);
        	        /*
        	        在这里处理您自己的业务逻辑
        	         */
@@ -164,10 +173,13 @@ public class WxFacePayUtil {
      * @备注 :
      *
      */
-    public static String getWxpayfaceAuthinfo() {
+    public static String getWxpayfaceAuthinfo(Context context) {
 
-        //获取uuid
+        //获取参数
+
+        String uuid = CommonUtil.getUUID(context);
         //请求后台
+        String result = HttpUtils.httpGET(HttpUtils.URI.INIT + "?" + uuid);
         return null;
     }
     private static boolean isSuccessInfo(Map info,String tag) {

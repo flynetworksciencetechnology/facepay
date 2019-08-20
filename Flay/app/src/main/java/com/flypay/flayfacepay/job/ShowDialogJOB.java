@@ -2,6 +2,7 @@ package com.flypay.flayfacepay.job;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Looper;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
@@ -33,10 +34,13 @@ public class ShowDialogJOB implements Runnable {
     }
     @Override
     public void run() {
+        Looper.prepare();//增加部分
         showText();
+        Looper.loop();//增加部分
     }
 
     private void showText() {
+
         Toast toast = Toast.makeText(context, text, Toast.LENGTH_LONG);
         //屏幕居中显示，X轴和Y轴偏移量都是0
         toast.setGravity(Gravity.CENTER, 0, 0);

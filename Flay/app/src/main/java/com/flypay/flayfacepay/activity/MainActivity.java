@@ -37,7 +37,7 @@ public class MainActivity extends BaseActivity {
                 //开启人脸支付
                 Intent intent = new Intent(MainActivity.this,FacePayActivity.class);
                 startActivity(intent);
-                MainActivity.this.finish();
+                //MainActivity.this.finish();
             }
         },tv, StaticConf.BackType.DEL,this.getApplicationContext());
     }

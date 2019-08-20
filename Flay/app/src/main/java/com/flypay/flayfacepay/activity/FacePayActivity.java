@@ -51,7 +51,7 @@ public class FacePayActivity extends BaseActivity {
         //向后台请求获取认证
         Log.i(TAG,"向后台请求获取认证");
         //获取调用凭证
-        String authinfo = WxFacePayUtil.getWxpayfaceAuthinfo();
+        String authinfo = WxFacePayUtil.getWxpayfaceAuthinfo(this.getApplicationContext());
         if( authinfo == null || "".equals(authinfo)){
             //获取认证失败
             //支付失败

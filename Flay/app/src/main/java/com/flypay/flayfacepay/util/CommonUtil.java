@@ -1,11 +1,19 @@
 package com.flypay.flayfacepay.util;
 
 import android.content.Context;
+import android.os.Looper;
 import android.provider.Settings;
 import android.text.TextUtils;
 
+import com.flypay.flayfacepay.job.ShowDialogJOB;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.tencent.mars.xlog.Log;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -18,6 +26,7 @@ import java.util.UUID;
  *
  */
 public class CommonUtil {
+
 
     /**
      * @描述 : 获取当前类的类名,目前用做log
@@ -35,12 +44,9 @@ public class CommonUtil {
     public static String getUUID(Context context) {
         SPUtils spUtils = SPUtils.getInstance(context);
         String uuid = spUtils.getString(SPUtils.PREF_KEY_UUID);
-        if( TextUtils.isEmpty(uuid)){
+        if( !TextUtils.isEmpty(uuid)){
             uuid = getDeviceUUid();
-            if (TextUtils.isEmpty(uuid)) {
-                uuid = getAppUUid(context);
-
-            }
+            Log.i("CommonUtil","UUID ::::::::::::::::::" + uuid);
             spUtils.put(SPUtils.PREF_KEY_UUID,uuid);
         }
         return uuid;
@@ -111,5 +117,38 @@ public class CommonUtil {
         }
 
         return id == null ? "" : id;
+    }
+
+    public static boolean init(Context context) {
+        //获取uuid
+        String uuid = CommonUtil.getUUID(context);
+        //请求后台
+        String result = HttpUtils.httpGET(HttpUtils.URI.INIT + "?" + uuid);
+        //获取结果
+        if( result == null || "".equals(result)){
+
+            ShowDialogJOB show = new ShowDialogJOB("获取商户信息失败,请检查网络信息",context);
+            Thread t = new Thread(show);
+            t.start();
+            return false;
+        }else{
+            //整理后台返回信息
+            Gson gson = new Gson();
+            JsonObject obj = gson.fromJson(result, JsonObject.class);
+            SPUtils spUtils = SPUtils.getInstance(context);
+            for (Map.Entry<String, JsonElement> set : obj.entrySet()) {//通过遍历获取key和value
+                String key = set.getKey();
+                String value = set.getValue().getAsString();
+                if( !spUtils.contains(key)){
+                    spUtils.put(key,value);
+                }else{
+                    String temp = spUtils.getString(key);
+                    if( temp != null && !temp.equals(value)){
+                        spUtils.put(key,value);
+                    }
+                }
+            }
+            return true;
+        }
     }
 }

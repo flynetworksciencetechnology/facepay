@@ -24,6 +24,14 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         initXlog();
+        //初始化微信人脸支付
+        Boolean flag = CommonUtil.init(this.getApplicationContext());//初始化,获取商户信息存入本地缓存
+        if( !flag) return;
+        flag = WxFacePayUtil.initWxFacePay(this);
+        if( !flag) return;
+        WxFacePayUtil.getWxpayfaceRawdata();
+        //获取调用凭证
+        WxFacePayUtil.getWxpayfaceAuthinfo(this.getApplicationContext());
 
     }
     private void initXlog(){
@@ -43,11 +51,7 @@ public class MyApplication extends Application {
             Xlog.setConsoleLogOpen(false);
         }
         Log.setLogImp(new Xlog());
-        //初始化微信人脸支付
-        WxFacePayUtil.initWxFacePay(this);
-        WxFacePayUtil.getWxpayfaceRawdata();
-        //获取调用凭证
-        WxFacePayUtil.getWxpayfaceAuthinfo();
+
     }
 
     @Override
