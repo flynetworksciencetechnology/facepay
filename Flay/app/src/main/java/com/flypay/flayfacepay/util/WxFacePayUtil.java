@@ -26,12 +26,10 @@ import java.util.Map;
  */
 public class WxFacePayUtil {
     private static final String TAG = CommonUtil.getTag();
-    private static String rawdata;
     //初始化
-    public static boolean initWxFacePay(final Application app){
+    public static void initWxFacePay(final Application app){
         final String tag = getTag();
         Log.i(TAG,"初始化微信人脸支付开始");
-        final boolean[] flag = {false};
         WxPayFace.getInstance().initWxpayface(app.getApplicationContext(), new IWxPayfaceCallback() {
             @Override
             public void response(Map info) throws RemoteException {
@@ -41,18 +39,20 @@ public class WxFacePayUtil {
                     ShowDialogJOB show = new ShowDialogJOB("初始化微信刷脸支付失败,请检查网络",app.getApplicationContext());
                     Thread t = new Thread(show);
                     t.start();
+                    return;
                 }else{
                     //执行自定义逻辑
-                    flag[0] = true;
                     Log.i(TAG,"初始化微信人脸支付成功");
+                    //WxFacePayUtil.getWxpayfaceRawdata(app.getApplicationContext());
                 }
             }
         });
-        return flag[0];
     }
-    public static void getWxpayfaceRawdata() {
+    public static void getWxpayfaceRawdata(final Context context) {
         final String tag = getTag();
         WxPayFace.getInstance().getWxpayfaceRawdata(new IWxPayfaceCallback() {
+            private String rawdata;
+
             @Override
             public void response(Map map) throws RemoteException {
                 if (map == null) {
@@ -60,15 +60,23 @@ public class WxFacePayUtil {
                     return;
                 }
                 String msg = (String) map.get("return_msg");
-                rawdata = map.get("rawdata").toString();
-                if (isSuccessInfo(map,tag)) {
+
+                if (!isSuccessInfo(map,tag)) {
                     new RuntimeException("调用返回非成功信息,return_msg:" + msg + "   ").printStackTrace();
                     return ;
                 }
+                rawdata = map.get("rawdata").toString();
                 Log.i(TAG,"获取rawdata成功" +rawdata);
        	        /*
        	        在这里处理您自己的业务逻辑
        	         */
+       	        //调用设置
+                Log.i(TAG,"初始化微信人脸支付,并且获取rawdata: " + rawdata);
+                String url = "http://localhost:8762/fly/pay/setRawdata";
+                Map<String, String> params = new HashMap<String, String>(){{
+                    put("rawdata",rawdata);
+                }};
+                HttpUtils.GET(HttpUtils.URI.RAWDATA,params);
             }
         });
     }
@@ -179,14 +187,17 @@ public class WxFacePayUtil {
 
         String uuid = CommonUtil.getUUID(context);
         //请求后台
-        String result = HttpUtils.httpGET(HttpUtils.URI.INIT + "?" + uuid);
+        Map<String, String> params = new HashMap<String, String>(){{
+            put("amount","0.01");
+        }};
+        HttpUtils.GET(HttpUtils.URI.AUTHINFO,params);
         return null;
     }
     private static boolean isSuccessInfo(Map info,String tag) {
-        BaseActivity ba = new BaseActivity();
+        //BaseActivity ba = new BaseActivity();
         if (info == null) {
             //showToast("调用返回为空, 请查看日志");
-            ba.showToast(StaticConf.ERROR_MSG.微信返回异常_调用返回为空.name());
+            //ba.showToast(StaticConf.ERROR_MSG.微信返回异常_调用返回为空.name());
             new MyException(StaticConf.RESPONSE_CODE.FAILD,StaticConf.ERROR_MSG.微信返回异常_调用返回为空,new RuntimeException(StaticConf.ERROR_MSG.微信返回异常_调用返回为空.name()));
             return false;
         }
@@ -196,7 +207,7 @@ public class WxFacePayUtil {
         Log.i(tag, "response | "+ method_name+" " + code + " | " + msg);
         if (code == null || !code.equals(WxfacePayCommonCode.VAL_RSP_PARAMS_SUCCESS)) {
             //showToast("调用返回非成功信息, 请查看日志");
-            ba.showToast(StaticConf.ERROR_MSG.调用返回非成功信息.name());
+            //ba.showToast(StaticConf.ERROR_MSG.调用返回非成功信息.name());
             new MyException(StaticConf.RESPONSE_CODE.FAILD,StaticConf.ERROR_MSG.调用返回非成功信息,new RuntimeException(StaticConf.ERROR_MSG.调用返回非成功信息.name() + msg));
             return false;
         }

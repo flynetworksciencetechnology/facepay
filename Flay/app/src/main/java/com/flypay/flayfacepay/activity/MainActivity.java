@@ -8,6 +8,7 @@ import android.view.KeyEvent;
 import android.widget.TextView;
 
 import com.flypay.flayfacepay.R;
+import com.flypay.flayfacepay.bp.FacePayService;
 import com.flypay.flayfacepay.conf.StaticConf;
 import com.flypay.flayfacepay.inputlistmonitor.PeripheralMonitor;
 import com.flypay.flayfacepay.util.CommonUtil;
@@ -29,14 +30,18 @@ public class MainActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        TextView tv = (TextView)findViewById(R.id.payment);
+        final TextView tv = (TextView)findViewById(R.id.payment);
         peripheralMonitor = new PeripheralMonitor(new PeripheralMonitor.OnScanListener() {
             @Override
             public void onResult(String code) {
                 //showToast(code);
                 //开启人脸支付
-                Intent intent = new Intent(MainActivity.this,FacePayActivity.class);
-                startActivity(intent);
+                //Intent intent = new Intent(MainActivity.this,FacePayActivity.class);
+                //startActivity(intent);
+                //FacePayService
+                FacePayService pay = new FacePayService();
+                String text = tv.getText() + "";
+                pay.facePay(text);
                 //MainActivity.this.finish();
             }
         },tv, StaticConf.BackType.DEL,this.getApplicationContext());

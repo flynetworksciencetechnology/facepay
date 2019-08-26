@@ -13,6 +13,11 @@ import com.tencent.mars.xlog.Log;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,19 +40,18 @@ public class CommonUtil {
      * @作者 : LiF
      * @修改人 :
      * @备注 :
-     *
      */
-    public static String getTag(){
+    public static String getTag() {
         return new Exception().getStackTrace()[1].getClassName();
     }
 
     public static String getUUID(Context context) {
         SPUtils spUtils = SPUtils.getInstance(context);
         String uuid = spUtils.getString(SPUtils.PREF_KEY_UUID);
-        if( !TextUtils.isEmpty(uuid)){
+        if (!TextUtils.isEmpty(uuid)) {
             uuid = getDeviceUUid();
-            Log.i("CommonUtil","UUID ::::::::::::::::::" + uuid);
-            spUtils.put(SPUtils.PREF_KEY_UUID,uuid);
+            Log.i("CommonUtil", "UUID ::::::::::::::::::" + uuid);
+            spUtils.put(SPUtils.PREF_KEY_UUID, uuid);
         }
         return uuid;
     }
@@ -59,54 +63,56 @@ public class CommonUtil {
      * @作者 : LiF
      * @修改人 :
      * @备注 :
-     *
      */
     private static final Integer MAX = 6;
-    public static String getId(String uuid,Context context,String idBuild){
+
+    public static String getId(String uuid, Context context, String idBuild) {
         SPUtils spUtils = SPUtils.getInstance(context);
         //获取商户信息
 
         //进行订单号运算
-        if( !spUtils.contains(idBuild)){
-            spUtils.put(idBuild,1L);
+        if (!spUtils.contains(idBuild)) {
+            spUtils.put(idBuild, 1L);
         }
         long id = spUtils.getLong(idBuild);
         //idbuild+1
-        spUtils.put(idBuild,id + 1);
+        spUtils.put(idBuild, id + 1);
         //截取UUID后四位作为前四位
         int length = uuid.length();
-        uuid = uuid.substring(length - 4 , length);
+        uuid = uuid.substring(length - 4, length);
         //查看当前id长度
         String idStr = String.valueOf(id);
         int id_length = idStr.length();
         int temp = 6 - id_length;
-        if( temp > 0 ){
+        if (temp > 0) {
             //补0
-            for (int i = 0 ; i < temp ; i++){
+            for (int i = 0; i < temp; i++) {
                 idStr = "0" + idStr;
             }
         }
         idStr = uuid + idStr;
         return idStr;
     }
+
     private static String getAppUUid(Context context) {
         return UUID.randomUUID().toString();
     }
-    private static String getDeviceUUid()
-    {
+
+    public static String getDeviceUUid() {
         String androidId = getAndroidID();
-        UUID deviceUuid = new UUID(androidId.hashCode(), ((long)androidId.hashCode() << 32));
+        UUID deviceUuid = new UUID(androidId.hashCode(), ((long) androidId.hashCode() << 32));
         return deviceUuid.toString();
     }
+
     private static String getAndroidID() {
         String id = null;
-        try{
+        try {
             Class<?> c = Class.forName("android.os.SystemProperties");
 
             Method get = c.getMethod("get", String.class, String.class);
 
             id = (String) (get.invoke(c, "ro.serialno", "unknown"));
-        }catch (NoSuchMethodException e) {
+        } catch (NoSuchMethodException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
             e.printStackTrace();
@@ -119,36 +125,31 @@ public class CommonUtil {
         return id == null ? "" : id;
     }
 
-    public static boolean init(Context context) {
-        //获取uuid
-        String uuid = CommonUtil.getUUID(context);
-        //请求后台
-        String result = HttpUtils.httpGET(HttpUtils.URI.INIT + "?" + uuid);
-        //获取结果
-        if( result == null || "".equals(result)){
+    public static boolean init(final Context context) {
+        HttpUtils.GET(HttpUtils.URI.INIT,null);
+        return true;
+    }
 
-            ShowDialogJOB show = new ShowDialogJOB("获取商户信息失败,请检查网络信息",context);
-            Thread t = new Thread(show);
-            t.start();
-            return false;
-        }else{
-            //整理后台返回信息
-            Gson gson = new Gson();
-            JsonObject obj = gson.fromJson(result, JsonObject.class);
-            SPUtils spUtils = SPUtils.getInstance(context);
-            for (Map.Entry<String, JsonElement> set : obj.entrySet()) {//通过遍历获取key和value
-                String key = set.getKey();
-                String value = set.getValue().getAsString();
-                if( !spUtils.contains(key)){
-                    spUtils.put(key,value);
-                }else{
-                    String temp = spUtils.getString(key);
-                    if( temp != null && !temp.equals(value)){
-                        spUtils.put(key,value);
+    /**
+     * @return String
+     * @Title: getIpAddress
+     * @Description: 获取设备ip地址
+     */
+    public static String getIpAddress() {
+        try {
+            for (Enumeration<NetworkInterface> enNetI = NetworkInterface.getNetworkInterfaces(); enNetI
+                    .hasMoreElements(); ) {
+                NetworkInterface netI = enNetI.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = netI.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (inetAddress instanceof Inet4Address && !inetAddress.isLoopbackAddress()) {
+                        return inetAddress.getHostAddress();
                     }
                 }
             }
-            return true;
+        } catch (SocketException e) {
+            e.printStackTrace();
         }
+        return "";
     }
 }

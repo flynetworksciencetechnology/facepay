@@ -26,12 +26,9 @@ public class MyApplication extends Application {
         initXlog();
         //初始化微信人脸支付
         Boolean flag = CommonUtil.init(this.getApplicationContext());//初始化,获取商户信息存入本地缓存
-        if( !flag) return;
-        flag = WxFacePayUtil.initWxFacePay(this);
-        if( !flag) return;
-        WxFacePayUtil.getWxpayfaceRawdata();
-        //获取调用凭证
-        WxFacePayUtil.getWxpayfaceAuthinfo(this.getApplicationContext());
+        //if( !flag) return;
+        WxFacePayUtil.initWxFacePay(this);
+
 
     }
     private void initXlog(){

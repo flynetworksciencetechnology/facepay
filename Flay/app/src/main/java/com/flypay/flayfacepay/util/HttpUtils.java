@@ -2,6 +2,8 @@ package com.flypay.flayfacepay.util;
 
 import android.text.TextUtils;
 
+import com.tencent.mars.xlog.Log;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,83 +16,89 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * http请求工具类
  */
 public class HttpUtils {
 
-    /**
-     * 发送Get请求到服务器
-     * @param strUrlPath:接口地址（带参数）
-     * @return
-     */
-    public static String httpGET(String strUrlPath){
-        String strResult = "";
-        try {
-            URL url = new URL(strUrlPath);
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setUseCaches(false);
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-            StringBuffer buffer = new StringBuffer();
-            String line = "";
-            while ((line = in.readLine()) != null){
-                buffer.append(line);
-            }
-            strResult = buffer.toString();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (ProtocolException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
+    //初始化参数
+    private static final Map<String, String> BASE_PARAM = new HashMap<java.lang.String, java.lang.String>(){
+        {
+            put("uuid",CommonUtil.getDeviceUUid());
+            put("ip",CommonUtil.getIpAddress());
         }
-        return strResult;
+    };
+    public static void asynGET(String url,Map<String, String> params){
+        //处理url
+        url = setParams(url, params);
+        OkHttpClient okHttpClient = new OkHttpClient();
+        final Request request = new Request.Builder()
+                .url(url)
+                .get()//默认就是GET请求，可以不写
+                .build();
+        Call call = okHttpClient.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e("HttpUtils","请求失败",e);
+            }
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                //成功
+                Log.i("HttpUtils","onResponse: " + response.body().string());
+            }
+        });
     }
-    /**
-     * 发送Get请求到服务器
-     * @param strUrlPath:接口地址（带参数）
-     * @return
-     */
-    public static String httpGET(String strUrlPath,Map<String, String> params){
-        String strResult = "";
-        try {
-            String param = getRequestData(params,"UTF-8").toString();
-            if(!TextUtils.isEmpty(param)){
-                strUrlPath = strUrlPath + "?" + param;
-            }
 
-            URL url = new URL(strUrlPath);
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setUseCaches(false);
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-            StringBuffer buffer = new StringBuffer();
-            String line = "";
-            while ((line = in.readLine()) != null){
-                buffer.append(line);
-            }
-            strResult = buffer.toString();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (ProtocolException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+    private static String setParams(String url, Map<String, String> params) {
+        if( params != null && !params.isEmpty()){
+            //有参数
+            params.putAll(BASE_PARAM);
+        }else{
+            //无参数
+            params = BASE_PARAM;
         }
-        return strResult;
+        //拼接参数
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            sb.append(entry.getKey()).append("=").append(entry.getValue())
+                    .append(("&"));
+        }
+        url = url + "?"
+                + sb.toString().subSequence(0, sb.toString().length() - 1);
+        return url;
+    }
+
+    public static String GET(String url, Map<String, String> params){
+        url = setParams(url, params);
+        Log.i("HttpUtils","url :" + url);
+        OkHttpClient okHttpClient = new OkHttpClient();
+        final Request request = new Request.Builder()
+                .url(url)
+                .build();
+        final Call call = okHttpClient.newCall(request);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Response response = call.execute();
+                    Log.d("HttpUtils", "run: " + response.body().string());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+        return null;
     }
     /**
      * 发送Post请求到服务器
@@ -180,6 +188,9 @@ public class HttpUtils {
     }
 
     public class URI{
-        public static final String INIT = "http://localhost:8080/fly/pay/init";
+        public static final String INIT = "http://192.168.1.117:8762/fly/pay/init";
+        public static final String GETAUTHINFO = "http://192.168.1.117:8762/fly/getAuthinfo";
+        public static final String AUTHINFO = "http://192.168.1.117:8762/fly/pay/wechat/authinfo";
+        public static final String  RAWDATA = "http://192.168.1.117:8762/fly/pay/setRawdata";
     }
 }
