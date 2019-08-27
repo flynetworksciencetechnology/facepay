@@ -68,19 +68,20 @@ public class WxFacePayUtil {
                     put("amount",amount);
                 }};
                 //获取支付调用凭证
-                CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.AUTHINFO, new RequestParams(params)), new Callback() {
+                CommonOkhttpClient.sendRequest(CommonRequest.initPostRequest(URI.HOST + URI.AUTHINFO, new RequestParams(params)), new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
                         Log.e(TAG,"初始化调用认证失败");
                     }
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
-                        Log.i(TAG,"初始化调用认证成功 : " + response.body().toString());
+                        Log.i(TAG,"初始化调用认证成功 : " + response.body().string());
+
                         if( !Integer.valueOf(0).equals(flag)){
                             //非初始化,则直接调用刷脸支付
                             //doGetFaceCode()
                             Gson gson = new Gson();
-                            JSONObject job = gson.fromJson(response.body().toString(), JSONObject.class);
+                            JSONObject job = gson.fromJson(response.body().string(), JSONObject.class);
 
                             try {
                                 String code = job.getString("code");
@@ -116,13 +117,13 @@ public class WxFacePayUtil {
         Map<String, String> m1 = new HashMap<String, String>();
         m1.put("appid", appid); // 公众号，必填
         m1.put("mch_id", mchId); // 商户号，必填
-        m1.put("sub_appid", subAppid); // 子商户公众账号ID(非服务商模式不填)
+        //m1.put("sub_appid", subAppid); // 子商户公众账号ID(非服务商模式不填)
         m1.put("sub_mch_id", subMchid); // 子商户号(非服务商模式不填)
         m1.put("store_id", storeId); // 门店编号，必填
 //        m1.put("telephone", "用户手机号"); // 用户手机号，用于传递会员手机号到界面输入栏，非必填
         m1.put("out_trade_no", orderno); // 商户订单号， 必填
         m1.put("authinfo", authinfo); // 调用凭证
-        m1.put("total_fee", fee); // 订单金额（数字），单位：分，必填
+        m1.put("total_fee", "100"); // 订单金额（数字），单位：分，必填
         m1.put("face_authtype", "FACEPAY"); // FACEPAY：人脸凭证，常用于人脸支付    FACEPAY_DELAY：延迟支付   必填
         m1.put("ask_face_permit", "0"); // 展开人脸识别授权项，详情见上方接口参数，必填
             m1.put("ask_ret_page", "1"); // 是否展示微信支付成功页，可选值："0"，不展示；"1"，展示，非必填

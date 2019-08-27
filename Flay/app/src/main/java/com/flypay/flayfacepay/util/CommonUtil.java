@@ -62,7 +62,7 @@ public class CommonUtil {
     }
 
     public static void init(final Context context) {
-        HttpUtils.asynGET(HttpUtils.URI.INIT,null);
+        //HttpUtils.asynGET(HttpUtils.URI.INIT,null);
     }
 
     /**

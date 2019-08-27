@@ -9,18 +9,25 @@ import android.widget.TextView;
 import com.flypay.flayfacepay.R;
 import com.flypay.flayfacepay.conf.StaticConf;
 import com.flypay.flayfacepay.inputlistmonitor.PeripheralMonitor;
+import com.flypay.flayfacepay.model.OrderInfoPO;
+import com.flypay.flayfacepay.model.Result;
+import com.flypay.flayfacepay.model.StoreMerchanEquipmentInfoVO;
 import com.flypay.flayfacepay.util.CommonUtil;
 import com.flypay.flayfacepay.util.WxFacePayUtil;
 import com.flypay.flayfacepay.util.http.CommonOkhttpClient;
 import com.flypay.flayfacepay.util.http.CommonRequest;
+import com.flypay.flayfacepay.util.http.RequestParams;
 import com.flypay.flayfacepay.util.http.URI;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -55,44 +62,55 @@ public class MainActivity extends BaseActivity {
                 //String text = tv.getText() + "";
                 //pay.facePay(text);
                 //去后台获取调用认证,
-                CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.GETAUTHINFO, null), new Callback() {
+                final String amount = String.valueOf(tv.getText());
+                Map<String, String> params = new HashMap<String, String>(){
+                    {
+                        put("amount",amount);
+                    }
+                };
+                CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.GETAUTHINFO, new RequestParams(params)), new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
-
+                        com.tencent.mars.xlog.Log.e(TAG,"获取失败");
+                        e.printStackTrace();
                     }
 
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
                         //查看获取结果
-                        String result = response.body().toString();
+                        String res = response.body().string();
+                        com.tencent.mars.xlog.Log.i(TAG,"获取认证成功 : " + res);
                         Gson gson = new Gson();
-                        JSONObject job = gson.fromJson(result, JSONObject.class);
-                        try {
-                            String code = job.getString("code");
-                            if( "0000".equals(code)){
+                        //JsonObject job = new JsonParser().parse(jsonstr).getAsJsonObject();
+
+                        Result result = gson.fromJson(res, Result.class);
+//                        try {
+                            if( result != null && "0000".equals(result.code)){
                                 //请求成功
                                 //获取成功
                                 //调用刷脸
-                                String appid = job.getString("appid");
-                                String mchId = job.getString("mchid");
-                                String subAppid = job.getString("subAppid");
-                                String subMchid = job.getString("subMchid");
-                                String storeId = job.getString("storeId");
-                                String authinfo = job.getString("authinfo");
-                                JSONObject order = job.getJSONObject("oi");
-                                String orderno = order.getString("orderno");
-                                String fee = order.getString("total_amount");
+                                StoreMerchanEquipmentInfoVO sm = gson.fromJson(gson.toJson(result.data),StoreMerchanEquipmentInfoVO.class);
+
+                                String appid = sm.appid;
+                                String mchId = sm.mchid;
+                                String subAppid = sm.subAppid;
+                                String subMchid = sm.subMchid;
+                                String storeId = sm.storeId;
+                                String authinfo = sm.authinfo;
+                                OrderInfoPO od = sm.oi;
+                                String orderno = od.orderno;
+                                String fee = String.valueOf(od.totalAmount);
                                 WxFacePayUtil.doGetFaceCode(appid,mchId,subAppid,subMchid,storeId,authinfo,orderno,fee);
                             }else{
                                 //请求失败
                                 //获取失败
                                 //重新获取
-                                String amount = String.valueOf(tv.getText());
+
                                 WxFacePayUtil.initAuthinfo(1,amount);
                             }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
+//                        } catch (JSONException e) {
+//                            e.printStackTrace();
+//                        }
                     }
                 });
             }
