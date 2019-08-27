@@ -11,10 +11,14 @@ import com.flypay.flayfacepay.util.http.CommonOkhttpClient;
 import com.flypay.flayfacepay.util.http.CommonRequest;
 import com.flypay.flayfacepay.util.http.RequestParams;
 import com.flypay.flayfacepay.util.http.URI;
+import com.google.gson.Gson;
 import com.tencent.mars.xlog.Log;
 import com.tencent.wxpayface.IWxPayfaceCallback;
 import com.tencent.wxpayface.WxPayFace;
 import com.tencent.wxpayface.WxfacePayCommonCode;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -36,7 +40,7 @@ import okhttp3.Response;
 public class WxFacePayUtil {
     private static final String TAG = CommonUtil.getTag();
     //初始化
-    public static void initAuthinfo(final Integer flag) {
+    public static void initAuthinfo(final Integer flag,final String amount) {
         final String tag = getTag();
         WxPayFace.getInstance().getWxpayfaceRawdata(new IWxPayfaceCallback() {
             private String rawdata;
@@ -60,6 +64,8 @@ public class WxFacePayUtil {
                 Log.i(TAG,"初始化微信人脸支付,并且获取rawdata: " + rawdata);
                 Map<String, String> params = new HashMap<String, String>(){{
                     put("rawdata",rawdata);
+                    put("flag",String.valueOf(flag));
+                    put("amount",amount);
                 }};
                 //获取支付调用凭证
                 CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.AUTHINFO, new RequestParams(params)), new Callback() {
@@ -73,6 +79,28 @@ public class WxFacePayUtil {
                         if( !Integer.valueOf(0).equals(flag)){
                             //非初始化,则直接调用刷脸支付
                             //doGetFaceCode()
+                            Gson gson = new Gson();
+                            JSONObject job = gson.fromJson(response.body().toString(), JSONObject.class);
+
+                            try {
+                                String code = job.getString("code");
+                                if( "0000".equals(code)){
+                                    String appid = job.getString("appid");
+                                    String mchId = job.getString("mchid");
+                                    String subAppid = job.getString("subAppid");
+                                    String subMchid = job.getString("subMchid");
+                                    String storeId = job.getString("storeId");
+                                    String authinfo = job.getString("authinfo");
+                                    JSONObject order = job.getJSONObject("oi");
+                                    String orderno = order.getString("orderno");
+                                    String fee = order.getString("total_amount");
+                                    WxFacePayUtil.doGetFaceCode(appid,mchId,subAppid,subMchid,storeId,authinfo,orderno,fee);
+                                }else{
+                                    //获取调用认证失败
+                                }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 });
@@ -83,7 +111,7 @@ public class WxFacePayUtil {
 
 
 
-    public static boolean doGetFaceCode(String appid,String mchId,String subAppid, String subMchid, String storeId,final String authinfo,String orderno,String fee) {
+    public static boolean doGetFaceCode(final String appid,final String mchId,final String subAppid, final String subMchid, final String storeId,final String authinfo,final String orderno,final String fee) {
         //从后台获取参数
         Map<String, String> m1 = new HashMap<String, String>();
         m1.put("appid", appid); // 公众号，必填
@@ -127,20 +155,17 @@ public class WxFacePayUtil {
        	            2、当您确保要解开上述注释的时候，请您做好空指针的判断，不建议直接调用
        	         */
        	        //调用支付
-                boolean payResult = pay(faceCode,openid,authinfo);
-                //分析支付结果
-                //调用update
-                updateWxpayfacePayResult(authinfo,payResult);
+                pay(faceCode,openid,authinfo,orderno,appid,mchId,storeId);
             }
         });
         return true;
     }
-    private static void updateWxpayfacePayResult(String authinfo,boolean payResult) {
+    private static void updateWxpayfacePayResult(String authinfo,boolean payResult,String appid, String mchid,String storeId) {
         HashMap<String, String> map = new HashMap<String, String>();
-        map.put("appid", "填您的公众号"); // 公众号，必填
-        map.put("mch_id", "填您的商户号"); // 商户号，必填
-        map.put("store_id", "填您的门店编号"); // 门店编号，必填
-        map.put("authinfo", "填您的调用凭证"); // 调用凭证，必填
+        map.put("appid", appid); // 公众号，必填
+        map.put("mch_id", mchid); // 商户号，必填
+        map.put("store_id", storeId); // 门店编号，必填
+        map.put("authinfo", authinfo); // 调用凭证，必填
         map.put("payresult", "SUCCESS"); // 支付结果，SUCCESS:支付成功   ERROR:支付失败   必填
         if( !payResult){
             map.put("payresult", "ERROR"); // 支付结果，SUCCESS:支付成功   ERROR:支付失败   必填
@@ -163,14 +188,41 @@ public class WxFacePayUtil {
                 在这里处理您自己的业务逻辑：
                 执行到这里说明用户已经确认支付结果且成功了，此时刷脸支付界面关闭，您可以在这里选择跳转到其它界面
                  */
+                //去后台更新订单
             }
         });
     }
 
-    public static boolean pay(String faceCode, String openid, String authinfo) {
+    public static void pay(String faceCode, String openid, final String authinfo, String orderno, final String appid, final String mchid, final String storeId) {
+        Map<String, String> param = new HashMap<>();
+        param.put("openid",openid);
+        param.put("faceCode",faceCode);
+        param.put("orderno",orderno);
+        RequestParams requestParams = new RequestParams(param);
+        CommonOkhttpClient.sendRequest(CommonRequest.initPostRequest(URI.HOST + URI.PAY, requestParams), new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
 
-        return false;
+            }
 
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Gson gson = new Gson();
+                JSONObject job = gson.fromJson(response.body().toString(), JSONObject.class);
+
+                try {
+                    String code = job.getString("code");
+                    boolean flag = false;
+                    if( "0000".equals(code)){
+                        //支付成功
+                        flag = true;
+                    }
+                    updateWxpayfacePayResult(authinfo,flag,appid,mchid,storeId);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     private static boolean isSuccessInfo(Map info,String tag) {

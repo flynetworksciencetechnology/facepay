@@ -10,9 +10,15 @@ import com.flypay.flayfacepay.R;
 import com.flypay.flayfacepay.conf.StaticConf;
 import com.flypay.flayfacepay.inputlistmonitor.PeripheralMonitor;
 import com.flypay.flayfacepay.util.CommonUtil;
+import com.flypay.flayfacepay.util.WxFacePayUtil;
 import com.flypay.flayfacepay.util.http.CommonOkhttpClient;
 import com.flypay.flayfacepay.util.http.CommonRequest;
 import com.flypay.flayfacepay.util.http.URI;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 
@@ -58,11 +64,35 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
                         //查看获取结果
-                        //获取成功
-                            //调用刷脸
-                        //获取失败
-                        //重新获取
-                            //调用刷脸  WxFacePayUtil.initAuthinfo(1);
+                        String result = response.body().toString();
+                        Gson gson = new Gson();
+                        JSONObject job = gson.fromJson(result, JSONObject.class);
+                        try {
+                            String code = job.getString("code");
+                            if( "0000".equals(code)){
+                                //请求成功
+                                //获取成功
+                                //调用刷脸
+                                String appid = job.getString("appid");
+                                String mchId = job.getString("mchid");
+                                String subAppid = job.getString("subAppid");
+                                String subMchid = job.getString("subMchid");
+                                String storeId = job.getString("storeId");
+                                String authinfo = job.getString("authinfo");
+                                JSONObject order = job.getJSONObject("oi");
+                                String orderno = order.getString("orderno");
+                                String fee = order.getString("total_amount");
+                                WxFacePayUtil.doGetFaceCode(appid,mchId,subAppid,subMchid,storeId,authinfo,orderno,fee);
+                            }else{
+                                //请求失败
+                                //获取失败
+                                //重新获取
+                                String amount = String.valueOf(tv.getText());
+                                WxFacePayUtil.initAuthinfo(1,amount);
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                     }
                 });
             }
