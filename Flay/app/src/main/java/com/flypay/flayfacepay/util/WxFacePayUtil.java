@@ -7,13 +7,22 @@ import com.flypay.flayfacepay.activity.BaseActivity;
 import com.flypay.flayfacepay.conf.StaticConf;
 import com.flypay.flayfacepay.exception.MyException;
 import com.flypay.flayfacepay.job.ShowDialogJOB;
+import com.flypay.flayfacepay.util.http.CommonOkhttpClient;
+import com.flypay.flayfacepay.util.http.CommonRequest;
+import com.flypay.flayfacepay.util.http.RequestParams;
+import com.flypay.flayfacepay.util.http.URI;
 import com.tencent.mars.xlog.Log;
 import com.tencent.wxpayface.IWxPayfaceCallback;
 import com.tencent.wxpayface.WxPayFace;
 import com.tencent.wxpayface.WxfacePayCommonCode;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 /**
  * @描述 : 与微信人脸支付互通的工具类
@@ -27,34 +36,12 @@ import java.util.Map;
 public class WxFacePayUtil {
     private static final String TAG = CommonUtil.getTag();
     //初始化
-    public static void initWxFacePay(final Application app){
-        final String tag = getTag();
-        Log.i(TAG,"初始化微信人脸支付开始");
-        WxPayFace.getInstance().initWxpayface(app.getApplicationContext(), new IWxPayfaceCallback() {
-            @Override
-            public void response(Map info) throws RemoteException {
-                //inti结果
-                if(!isSuccessInfo(info,tag)){
-                    //初始化失败
-                    ShowDialogJOB show = new ShowDialogJOB("初始化微信刷脸支付失败,请检查网络",app.getApplicationContext());
-                    Thread t = new Thread(show);
-                    t.start();
-                    return;
-                }else{
-                    //执行自定义逻辑
-                    Log.i(TAG,"初始化微信人脸支付成功");
-                    //WxFacePayUtil.getWxpayfaceRawdata(app.getApplicationContext());
-                }
-            }
-        });
-    }
-    public static void getWxpayfaceRawdata(final Context context) {
+    public static void initAuthinfo(final Integer flag) {
         final String tag = getTag();
         WxPayFace.getInstance().getWxpayfaceRawdata(new IWxPayfaceCallback() {
             private String rawdata;
-
             @Override
-            public void response(Map map) throws RemoteException {
+            public void response(Map map) {
                 if (map == null) {
                     new RuntimeException("调用返回为空").printStackTrace();
                     return;
@@ -66,17 +53,29 @@ public class WxFacePayUtil {
                     return ;
                 }
                 rawdata = map.get("rawdata").toString();
-                Log.i(TAG,"获取rawdata成功" +rawdata);
        	        /*
        	        在这里处理您自己的业务逻辑
        	         */
        	        //调用设置
                 Log.i(TAG,"初始化微信人脸支付,并且获取rawdata: " + rawdata);
-                String url = "http://localhost:8762/fly/pay/setRawdata";
                 Map<String, String> params = new HashMap<String, String>(){{
                     put("rawdata",rawdata);
                 }};
-                HttpUtils.GET(HttpUtils.URI.RAWDATA,params);
+                //获取支付调用凭证
+                CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.AUTHINFO, new RequestParams(params)), new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        Log.e(TAG,"初始化调用认证失败");
+                    }
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        Log.i(TAG,"初始化调用认证成功 : " + response.body().toString());
+                        if( !Integer.valueOf(0).equals(flag)){
+                            //非初始化,则直接调用刷脸支付
+                            //doGetFaceCode()
+                        }
+                    }
+                });
             }
         });
     }
@@ -84,20 +83,21 @@ public class WxFacePayUtil {
 
 
 
-    public static boolean doGetFaceCode(final String authinfo,String orderno) {
+    public static boolean doGetFaceCode(String appid,String mchId,String subAppid, String subMchid, String storeId,final String authinfo,String orderno,String fee) {
+        //从后台获取参数
         Map<String, String> m1 = new HashMap<String, String>();
-        m1.put("appid", "填您的微信公众号"); // 公众号，必填
-        m1.put("mch_id", "填您的商户号"); // 商户号，必填
-//        m1.put("sub_appid", "xxxxxxxxxxx"); // 子商户公众账号ID(非服务商模式不填)
-//        m1.put("sub_mch_id", "xxxxxxxxxxx"); // 子商户号(非服务商模式不填)
-        m1.put("store_id", "填您的门店编号"); // 门店编号，必填
+        m1.put("appid", appid); // 公众号，必填
+        m1.put("mch_id", mchId); // 商户号，必填
+        m1.put("sub_appid", subAppid); // 子商户公众账号ID(非服务商模式不填)
+        m1.put("sub_mch_id", subMchid); // 子商户号(非服务商模式不填)
+        m1.put("store_id", storeId); // 门店编号，必填
 //        m1.put("telephone", "用户手机号"); // 用户手机号，用于传递会员手机号到界面输入栏，非必填
-        m1.put("out_trade_no", "填您的商户订单号"); // 商户订单号， 必填
+        m1.put("out_trade_no", orderno); // 商户订单号， 必填
         m1.put("authinfo", authinfo); // 调用凭证
-        m1.put("total_fee", "填订单的金额"); // 订单金额（数字），单位：分，必填
+        m1.put("total_fee", fee); // 订单金额（数字），单位：分，必填
         m1.put("face_authtype", "FACEPAY"); // FACEPAY：人脸凭证，常用于人脸支付    FACEPAY_DELAY：延迟支付   必填
         m1.put("ask_face_permit", "0"); // 展开人脸识别授权项，详情见上方接口参数，必填
-//        m1.put("ask_ret_page", "0"); // 是否展示微信支付成功页，可选值："0"，不展示；"1"，展示，非必填
+            m1.put("ask_ret_page", "1"); // 是否展示微信支付成功页，可选值："0"，不展示；"1"，展示，非必填
         WxPayFace.getInstance().getWxpayfaceCode(m1, new IWxPayfaceCallback() {
             @Override
             public void response(final Map info) throws RemoteException {
@@ -172,27 +172,7 @@ public class WxFacePayUtil {
         return false;
 
     }
-    /**
-     * @描述 : 去后台获取人脸凭证
-     * @版本 : V1.0.0
-     * @日期 : 2019/8/13 16:35
-     * @作者 : LiF
-     * @修改人 :
-     * @备注 :
-     *
-     */
-    public static String getWxpayfaceAuthinfo(Context context) {
 
-        //获取参数
-
-        String uuid = CommonUtil.getUUID(context);
-        //请求后台
-        Map<String, String> params = new HashMap<String, String>(){{
-            put("amount","0.01");
-        }};
-        HttpUtils.GET(HttpUtils.URI.AUTHINFO,params);
-        return null;
-    }
     private static boolean isSuccessInfo(Map info,String tag) {
         //BaseActivity ba = new BaseActivity();
         if (info == null) {
