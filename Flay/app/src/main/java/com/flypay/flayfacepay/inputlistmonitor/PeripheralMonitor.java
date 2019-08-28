@@ -64,6 +64,7 @@ public class PeripheralMonitor {
 
             //只要数字和. 有待修改
             int code = event.getKeyCode();
+            Log.i(TAG,"-------------------" + code);
             //只捕获已定义按键
             if (isaKeyCode(code)) {
                 //数字

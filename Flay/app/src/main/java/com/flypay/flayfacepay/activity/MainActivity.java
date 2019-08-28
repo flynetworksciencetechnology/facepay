@@ -1,6 +1,7 @@
 package com.flypay.flayfacepay.activity;
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -34,87 +35,17 @@ import okhttp3.Callback;
 import okhttp3.Response;
 
 public class MainActivity extends BaseActivity {
-    PeripheralMonitor peripheralMonitor;
 
-    @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
-        Log.d(TAG, "event= " + event);
-
-        if (peripheralMonitor.dispatchKeyEvent(event)) {
-            return true;
-        }
-
-        return super.dispatchKeyEvent(event);
-    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        final TextView tv = (TextView)findViewById(R.id.payment);
-        peripheralMonitor = new PeripheralMonitor(new PeripheralMonitor.OnScanListener() {
-            @Override
-            public void onResult(String code) {
-                //开启人脸支付
-                //Intent intent = new Intent(MainActivity.this,FacePayActivity.class);
-                //startActivity(intent);
-                //FacePayService
-                //FacePayService pay = new FacePayService();
-                //String text = tv.getText() + "";
-                //pay.facePay(text);
-                //去后台获取调用认证,
-                final String amount = String.valueOf(tv.getText());
-                Map<String, String> params = new HashMap<String, String>(){
-                    {
-                        put("amount",amount);
-                    }
-                };
-                CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.GETAUTHINFO, new RequestParams(params)), new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        com.tencent.mars.xlog.Log.e(TAG,"获取失败");
-                        e.printStackTrace();
-                    }
-
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        //查看获取结果
-                        String res = response.body().string();
-                        com.tencent.mars.xlog.Log.i(TAG,"获取认证成功 : " + res);
-                        Gson gson = new Gson();
-                        //JsonObject job = new JsonParser().parse(jsonstr).getAsJsonObject();
-
-                        Result result = gson.fromJson(res, Result.class);
-//                        try {
-                            if( result != null && "0000".equals(result.code)){
-                                //请求成功
-                                //获取成功
-                                //调用刷脸
-                                StoreMerchanEquipmentInfoVO sm = gson.fromJson(gson.toJson(result.data),StoreMerchanEquipmentInfoVO.class);
-
-                                String appid = sm.appid;
-                                String mchId = sm.mchid;
-                                String subAppid = sm.subAppid;
-                                String subMchid = sm.subMchid;
-                                String storeId = sm.storeId;
-                                String authinfo = sm.authinfo;
-                                OrderInfoPO od = sm.oi;
-                                String orderno = od.orderno;
-                                String fee = String.valueOf(od.totalAmount);
-                                WxFacePayUtil.doGetFaceCode(appid,mchId,subAppid,subMchid,storeId,authinfo,orderno,fee);
-                            }else{
-                                //请求失败
-                                //获取失败
-                                //重新获取
-
-                                WxFacePayUtil.initAuthinfo(1,amount);
-                            }
-//                        } catch (JSONException e) {
-//                            e.printStackTrace();
-//                        }
-                    }
-                });
-            }
-        },tv, StaticConf.BackType.DEL,this.getApplicationContext());
+        //初始化调用认证
+        WxFacePayUtil.initAuthinfo(0,null);
+        //跳转到待支付页面
+        //可以人工阻塞等待初始化调用认证的返回,然后再去开启新的页面
+        Intent intent = new Intent(MainActivity.this,WaitPayActivity.class);
+        startActivity(intent);
     }
     private static final String TAG = CommonUtil.getTag();
 }
