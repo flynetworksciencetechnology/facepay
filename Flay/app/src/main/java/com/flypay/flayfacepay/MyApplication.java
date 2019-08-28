@@ -70,7 +70,8 @@ public class MyApplication extends Application {
                             return;
                         }else{
                             Log.i(TAG,"初始化微信人脸支付成功");
-
+                            //初始化调用认证
+                            WxFacePayUtil.initAuthinfo(0,null);
                         }
                     }
                 });

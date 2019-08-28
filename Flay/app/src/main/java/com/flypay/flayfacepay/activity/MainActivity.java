@@ -40,8 +40,7 @@ public class MainActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //初始化调用认证
-        WxFacePayUtil.initAuthinfo(0,null);
+
         //跳转到待支付页面
         //可以人工阻塞等待初始化调用认证的返回,然后再去开启新的页面
         Intent intent = new Intent(MainActivity.this,WaitPayActivity.class);

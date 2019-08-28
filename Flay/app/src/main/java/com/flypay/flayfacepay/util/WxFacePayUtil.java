@@ -163,6 +163,7 @@ public class WxFacePayUtil {
         return true;
     }
     private static void updateWxpayfacePayResult(String authinfo,boolean payResult,String appid, String mchid,String storeId) {
+        Log.i(TAG,"开始更新");
         HashMap<String, String> map = new HashMap<String, String>();
         map.put("appid", appid); // 公众号，必填
         map.put("mch_id", mchid); // 商户号，必填
@@ -172,16 +173,19 @@ public class WxFacePayUtil {
         if( !payResult){
             map.put("payresult", "ERROR"); // 支付结果，SUCCESS:支付成功   ERROR:支付失败   必填
         }
+        //关闭刷脸支付界面
 
         WxPayFace.getInstance().updateWxpayfacePayResult(map, new IWxPayfaceCallback() {
             @Override
             public void response(Map info) throws RemoteException {
+                Log.i(TAG,"开始更新11111111111111");
                 if (info == null) {
                     new RuntimeException("调用返回为空").printStackTrace();
                     return;
                 }
                 String code = (String) info.get("return_code"); // 错误码
                 String msg = (String) info.get("return_msg"); // 错误码描述
+                Log.e(TAG,"更新订单" + code + "|" + msg);
                 if (code == null || !code.equals("SUCCESS")) {
                     new RuntimeException("调用返回非成功信息,return_msg:" + msg + "   ").printStackTrace();
                     return ;
@@ -205,24 +209,55 @@ public class WxFacePayUtil {
         CommonOkhttpClient.sendRequest(CommonRequest.initPostRequest(URI.HOST + URI.PAY, requestParams), new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-
+                    e.printStackTrace();
+                    Log.e(TAG,"支付异常");
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
+                String string = response.body().string();
+                Log.i(TAG,"支付结果 :" + string);
                 Gson gson = new Gson();
-                Result result = gson.fromJson(response.body().string(), Result.class);
+                Result result = gson.fromJson(string, Result.class);
 
                     boolean flag = false;
                     if( result != null && "0000".equals(result.code)){
                         //支付成功
                         flag = true;
                     }
-                    updateWxpayfacePayResult(authinfo,flag,appid,mchid,storeId);
+                updateWxpayfacePayResult(authinfo,flag,appid,mchid,storeId);
+                    //stopFaceRecognize( authinfo,flag,appid,mchid,storeId);
+
             }
         });
     }
+    private static void stopFaceRecognize(final String authinfo,final boolean flag,final String appid,final  String mchid,final String storeId) {
+        Log.i(TAG,"开始关闭");
+        HashMap<String, String> map = new HashMap<String, String>();
+        map.put("authinfo", authinfo); // 调用凭证，必填
+        WxPayFace.getInstance().stopWxpayface(map, new IWxPayfaceCallback() {
+            @Override
+            public void response(Map info) throws RemoteException {
+                Log.i(TAG,"开始关闭11111111111");
+                if (info == null) {
+                    new RuntimeException("调用返回为空").printStackTrace();
+                    return;
+                }
+                String code = (String) info.get("return_code"); // 错误码
+                String msg = (String) info.get("return_msg"); // 错误码描述
+                Log.e(TAG,"关闭识别" + code + "|" + msg);
+                if (code == null || !code.equals("SUCCESS")) {
+                    new RuntimeException("调用返回非成功信息,return_msg:" + msg + "   ").printStackTrace();
+                    return ;
+                }
 
+                /*
+                在这里处理您自己的业务逻辑
+                 */
+
+            }
+        });
+    }
     private static boolean isSuccessInfo(Map info,String tag) {
         //BaseActivity ba = new BaseActivity();
         if (info == null) {
