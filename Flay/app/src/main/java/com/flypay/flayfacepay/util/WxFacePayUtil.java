@@ -7,6 +7,7 @@ import com.flypay.flayfacepay.activity.BaseActivity;
 import com.flypay.flayfacepay.conf.StaticConf;
 import com.flypay.flayfacepay.exception.MyException;
 import com.flypay.flayfacepay.job.ShowDialogJOB;
+import com.flypay.flayfacepay.model.Result;
 import com.flypay.flayfacepay.util.http.CommonOkhttpClient;
 import com.flypay.flayfacepay.util.http.CommonRequest;
 import com.flypay.flayfacepay.util.http.RequestParams;
@@ -190,6 +191,7 @@ public class WxFacePayUtil {
                 执行到这里说明用户已经确认支付结果且成功了，此时刷脸支付界面关闭，您可以在这里选择跳转到其它界面
                  */
                 //去后台更新订单
+                //跳转其他页面
             }
         });
     }
@@ -209,19 +211,14 @@ public class WxFacePayUtil {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 Gson gson = new Gson();
-                JSONObject job = gson.fromJson(response.body().toString(), JSONObject.class);
+                Result result = gson.fromJson(response.body().string(), Result.class);
 
-                try {
-                    String code = job.getString("code");
                     boolean flag = false;
-                    if( "0000".equals(code)){
+                    if( result != null && "0000".equals(result.code)){
                         //支付成功
                         flag = true;
                     }
                     updateWxpayfacePayResult(authinfo,flag,appid,mchid,storeId);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
             }
         });
     }
