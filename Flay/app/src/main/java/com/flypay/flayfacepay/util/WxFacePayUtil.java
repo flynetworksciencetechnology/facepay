@@ -124,7 +124,7 @@ public class WxFacePayUtil {
 //        m1.put("telephone", "用户手机号"); // 用户手机号，用于传递会员手机号到界面输入栏，非必填
         m1.put("out_trade_no", orderno); // 商户订单号， 必填
         m1.put("authinfo", authinfo); // 调用凭证
-        m1.put("total_fee", "100"); // 订单金额（数字），单位：分，必填
+        m1.put("total_fee", fee); // 订单金额（数字），单位：分，必填
         m1.put("face_authtype", "FACEPAY"); // FACEPAY：人脸凭证，常用于人脸支付    FACEPAY_DELAY：延迟支付   必填
         m1.put("ask_face_permit", "0"); // 展开人脸识别授权项，详情见上方接口参数，必填
             m1.put("ask_ret_page", "1"); // 是否展示微信支付成功页，可选值："0"，不展示；"1"，展示，非必填

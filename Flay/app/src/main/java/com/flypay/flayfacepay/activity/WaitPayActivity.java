@@ -80,7 +80,7 @@ public class WaitPayActivity extends BaseActivity {
                             String authinfo = sm.authinfo;
                             OrderInfoPO od = sm.oi;
                             String orderno = od.orderno;
-                            String fee = String.valueOf(od.totalAmount);
+                            String fee = od.fee;
                             WxFacePayUtil.doGetFaceCode(appid,mchId,subAppid,subMchid,storeId,authinfo,orderno,fee);
                         }else{
                             //请求失败

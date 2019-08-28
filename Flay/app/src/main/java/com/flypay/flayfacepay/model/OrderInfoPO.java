@@ -8,4 +8,5 @@ public class OrderInfoPO{
     public Integer status;
     public String storeId;
     public String transactionId;
+    public String fee;
 }
