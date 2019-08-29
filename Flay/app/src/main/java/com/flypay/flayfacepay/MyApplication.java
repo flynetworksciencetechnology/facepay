@@ -11,8 +11,10 @@ import com.flypay.flayfacepay.exception.MyException;
 import com.flypay.flayfacepay.job.ShowDialogJOB;
 import com.flypay.flayfacepay.util.CommonUtil;
 import com.flypay.flayfacepay.util.WxFacePayUtil;
+import com.flypay.flayfacepay.util.WxPayHelper;
 import com.flypay.flayfacepay.util.http.CommonOkhttpClient;
 import com.flypay.flayfacepay.util.http.CommonRequest;
+import com.flypay.flayfacepay.util.http.RequestParams;
 import com.flypay.flayfacepay.util.http.URI;
 import com.google.gson.Gson;
 import com.tencent.mars.xlog.Log;
@@ -25,6 +27,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import okhttp3.Call;
@@ -49,32 +52,23 @@ public class MyApplication extends Application {
         initXlog();
         //初始化设备
         final Context context = this.getApplicationContext();
-        CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.INIT , null), new Callback() {
+        WxPayHelper singleton = WxPayHelper.getSingleton();
+        singleton.initWxPay(context);
+        Map<String, String> params = new HashMap<String, String>(){
+            {
+                put("ip",CommonUtil.getIpAddress());
+            }
+        };
+        CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.INIT , new RequestParams(params)), new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 //初始化失败
+                Log.e(TAG,"初始化设备失败");
             }
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 //初始设备化成功
-                //初始化微信支付
-                WxPayFace.getInstance().initWxpayface(context, new IWxPayfaceCallback() {
-                    @Override
-                    public void response(Map info) throws RemoteException {
-                        //inti结果
-                        if(!isSuccessInfo(info)){
-                            //初始化失败
-                            ShowDialogJOB show = new ShowDialogJOB("初始化微信刷脸支付失败,请检查网络",context);
-                            Thread t = new Thread(show);
-                            t.start();
-                            return;
-                        }else{
-                            Log.i(TAG,"初始化微信人脸支付成功");
-                            //初始化调用认证
-                            WxFacePayUtil.initAuthinfo(0,null);
-                        }
-                    }
-                });
+                Log.e(TAG,"初始化设备成功");
             }
         });
     }

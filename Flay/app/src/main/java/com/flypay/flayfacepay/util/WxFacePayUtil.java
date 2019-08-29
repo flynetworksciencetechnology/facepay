@@ -7,7 +7,9 @@ import com.flypay.flayfacepay.activity.BaseActivity;
 import com.flypay.flayfacepay.conf.StaticConf;
 import com.flypay.flayfacepay.exception.MyException;
 import com.flypay.flayfacepay.job.ShowDialogJOB;
+import com.flypay.flayfacepay.model.OrderInfoPO;
 import com.flypay.flayfacepay.model.Result;
+import com.flypay.flayfacepay.model.StoreMerchanEquipmentInfoVO;
 import com.flypay.flayfacepay.util.http.CommonOkhttpClient;
 import com.flypay.flayfacepay.util.http.CommonRequest;
 import com.flypay.flayfacepay.util.http.RequestParams;
@@ -41,7 +43,7 @@ import okhttp3.Response;
 public class WxFacePayUtil {
     private static final String TAG = CommonUtil.getTag();
     //初始化
-    public static void initAuthinfo(final Integer flag,final String amount) {
+    public static void initAuthinfo(final Integer flag,final String amount,final Context context) {
         final String tag = getTag();
         WxPayFace.getInstance().getWxpayfaceRawdata(new IWxPayfaceCallback() {
             private String rawdata;
@@ -79,29 +81,28 @@ public class WxFacePayUtil {
                         Log.i(TAG,"初始化调用认证成功 : " + response.body().string());
 
                         if( !Integer.valueOf(0).equals(flag)){
-                            //非初始化,则直接调用刷脸支付
-                            //doGetFaceCode()
+                            String res = response.body().string();
+                            com.tencent.mars.xlog.Log.i(TAG,"获取认证成功 : " + res);
                             Gson gson = new Gson();
-                            JSONObject job = gson.fromJson(response.body().string(), JSONObject.class);
-
-                            try {
-                                String code = job.getString("code");
-                                if( "0000".equals(code)){
-                                    String appid = job.getString("appid");
-                                    String mchId = job.getString("mchid");
-                                    String subAppid = job.getString("subAppid");
-                                    String subMchid = job.getString("subMchid");
-                                    String storeId = job.getString("storeId");
-                                    String authinfo = job.getString("authinfo");
-                                    JSONObject order = job.getJSONObject("oi");
-                                    String orderno = order.getString("orderno");
-                                    String fee = order.getString("total_amount");
-                                    WxFacePayUtil.doGetFaceCode(appid,mchId,subAppid,subMchid,storeId,authinfo,orderno,fee);
-                                }else{
-                                    //获取调用认证失败
-                                }
-                            } catch (JSONException e) {
-                                e.printStackTrace();
+                            Result result = gson.fromJson(res, Result.class);
+                            if( result != null && "0000".equals(result.code)){
+                                //请求成功
+                                //获取成功
+                                //调用刷脸
+                                StoreMerchanEquipmentInfoVO sm = gson.fromJson(gson.toJson(result.data),StoreMerchanEquipmentInfoVO.class);
+                                String appid = sm.appid;
+                                String mchId = sm.mchid;
+                                String subAppid = sm.subAppid;
+                                String subMchid = sm.subMchid;
+                                String storeId = sm.storeId;
+                                String authinfo = sm.authinfo;
+                                OrderInfoPO od = sm.oi;
+                                String orderno = od.orderno;
+                                String fee = od.fee;
+                                WxFacePayUtil.doGetFaceCode(appid,mchId,subAppid,subMchid,storeId,authinfo,orderno,fee);
+                            } else{
+                                Log.e(TAG,"获取调用认证失败,请检查网络信息");
+                                new ShowDialogJOB("获取调用认证失败,请检查网络信息",context);
                             }
                         }
                     }
@@ -127,7 +128,7 @@ public class WxFacePayUtil {
         m1.put("total_fee", fee); // 订单金额（数字），单位：分，必填
         m1.put("face_authtype", "FACEPAY"); // FACEPAY：人脸凭证，常用于人脸支付    FACEPAY_DELAY：延迟支付   必填
         m1.put("ask_face_permit", "0"); // 展开人脸识别授权项，详情见上方接口参数，必填
-            m1.put("ask_ret_page", "1"); // 是否展示微信支付成功页，可选值："0"，不展示；"1"，展示，非必填
+        m1.put("ask_ret_page", "1"); // 是否展示微信支付成功页，可选值："0"，不展示；"1"，展示，非必填
         WxPayFace.getInstance().getWxpayfaceCode(m1, new IWxPayfaceCallback() {
             @Override
             public void response(final Map info) throws RemoteException {
@@ -149,13 +150,7 @@ public class WxFacePayUtil {
                     new RuntimeException("调用返回非成功信息,return_msg:" + msg + "   ").printStackTrace();
                     return ;
                 }
-       	        /*
-       	        在这里处理您自己的业务逻辑
-       	        解释：您在上述中已经获得了支付凭证或者用户的信息，您可以使用这些信息通过调用支付接口来完成支付的业务逻辑
-       	        需要注意的是：
-       	            1、上述注释中的内容并非是一定会返回的，它们是否返回取决于相应的条件
-       	            2、当您确保要解开上述注释的时候，请您做好空指针的判断，不建议直接调用
-       	         */
+
        	        //调用支付
                 pay(faceCode,openid,authinfo,orderno,appid,mchId,storeId);
             }

@@ -13,7 +13,7 @@ public class CommonRequest {
 
     private static final Map<String, String> BASE_PARAM = new HashMap<String, String>(){{
         put("uuid", CommonUtil.getDeviceUUid());
-        put("ip",CommonUtil.getIpAddress());
+        //put("ip",CommonUtil.getIpAddress());
     }};
     /**
      * post请求对象

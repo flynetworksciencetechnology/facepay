@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 28
-    buildToolsVersion '27.0.3'
+    buildToolsVersion '28.0.3'
     defaultConfig {
         applicationId "com.flypay.flayfacepay"
         minSdkVersion 16
@@ -24,6 +24,11 @@ android {
         maven{ url'http://maven.aliyun.com/nexus/content/repositories/jcenter'}
 
     }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
 }
 allprojects {
     repositories {
@@ -35,6 +40,7 @@ allprojects {
         maven{ url'http://maven.aliyun.com/nexus/content/groups/public/' }
         maven{ url'http://maven.aliyun.com/nexus/content/repositories/jcenter'}
     }
+
 }
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])

@@ -24,19 +24,24 @@ import com.flypay.flayfacepay.R;
  * @备注 :
  *
  */
-public class ShowDialogJOB implements Runnable {
+public class ShowDialogJOB{
     String text;
     Context context;
 
     public ShowDialogJOB(String text, Context context) {
         this.text = text;
         this.context = context;
+
     }
-    @Override
     public void run() {
-        Looper.prepare();//增加部分
-        showText();
-        Looper.loop();//增加部分
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();//增加部分
+                showText();
+                Looper.loop();//增加部分
+            }
+        });
     }
 
     private void showText() {

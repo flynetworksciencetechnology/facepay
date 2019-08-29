@@ -1,17 +1,18 @@
 package com.flypay.flayfacepay.activity;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.widget.TextView;
 
 import com.flypay.flayfacepay.R;
+import com.flypay.flayfacepay.callpack.WxFacePayCallBack;
 import com.flypay.flayfacepay.conf.StaticConf;
 import com.flypay.flayfacepay.inputlistmonitor.PeripheralMonitor;
-import com.flypay.flayfacepay.model.OrderInfoPO;
 import com.flypay.flayfacepay.model.Result;
-import com.flypay.flayfacepay.model.StoreMerchanEquipmentInfoVO;
+import com.flypay.flayfacepay.util.AIUIUtils;
 import com.flypay.flayfacepay.util.CommonUtil;
-import com.flypay.flayfacepay.util.WxFacePayUtil;
+import com.flypay.flayfacepay.util.WxPayHelper;
 import com.flypay.flayfacepay.util.http.CommonOkhttpClient;
 import com.flypay.flayfacepay.util.http.CommonRequest;
 import com.flypay.flayfacepay.util.http.RequestParams;
@@ -46,7 +47,16 @@ public class WaitPayActivity extends BaseActivity {
             @Override
             public void onResult(String code) {
                 //去后台获取调用认证,
+                //语音播报金额
+                //开启等待
                 final String amount = String.valueOf(tv.getText());
+                final Context context = getApplicationContext();
+                final AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils(context);
+                aiuiUtils.sendMessage("需要支付" + amount + "元");
+                //去支付
+                final WxPayHelper singleton = WxPayHelper.getSingleton();
+
+                //生成订单
                 Map<String, String> params = new HashMap<String, String>(){
                     {
                         put("amount",amount);
@@ -55,42 +65,74 @@ public class WaitPayActivity extends BaseActivity {
                 CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.GETAUTHINFO, new RequestParams(params)), new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
-                        com.tencent.mars.xlog.Log.e(TAG,"获取失败");
-                        e.printStackTrace();
+                        //结束等待
+                        com.tencent.mars.xlog.Log.e(TAG,"创建订单失败");
+                        aiuiUtils.sendMessage("支付失败");
                     }
-
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
+                        //结束等待
                         //查看获取结果
                         String res = response.body().string();
                         com.tencent.mars.xlog.Log.i(TAG,"获取认证成功 : " + res);
                         Gson gson = new Gson();
                         Result result = gson.fromJson(res, Result.class);
                         if( result != null && "0000".equals(result.code)){
-                            //请求成功
-                            //获取成功
-                            //调用刷脸
-                            StoreMerchanEquipmentInfoVO sm = gson.fromJson(gson.toJson(result.data),StoreMerchanEquipmentInfoVO.class);
-
-                            String appid = sm.appid;
-                            String mchId = sm.mchid;
-                            String subAppid = sm.subAppid;
-                            String subMchid = sm.subMchid;
-                            String storeId = sm.storeId;
-                            String authinfo = sm.authinfo;
-                            OrderInfoPO od = sm.oi;
-                            String orderno = od.orderno;
-                            String fee = od.fee;
-                            WxFacePayUtil.doGetFaceCode(appid,mchId,subAppid,subMchid,storeId,authinfo,orderno,fee);
+                            //创建订单成功
+                            String orderno = (String)result.data;
+                            singleton.setPayCallBack(new WxFacePayCallBack(orderno,context));
+                            singleton.initRawData(orderno);
                         }else{
-                            //请求失败
-                            //获取失败
-                            //重新获取
-
-                            WxFacePayUtil.initAuthinfo(1,amount);
+                            //创建订单失败
+                            aiuiUtils.sendMessage("支付失败");
                         }
                     }
                 });
+
+//                Map<String, String> params = new HashMap<String, String>(){
+//                    {
+//                        put("amount",amount);
+//                    }
+//                };
+//                CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.GETAUTHINFO, new RequestParams(params)), new Callback() {
+//                    @Override
+//                    public void onFailure(Call call, IOException e) {
+//                        com.tencent.mars.xlog.Log.e(TAG,"获取失败");
+//                        e.printStackTrace();
+//                    }
+//
+//                    @Override
+//                    public void onResponse(Call call, Response response) throws IOException {
+//                        //查看获取结果
+//                        String res = response.body().string();
+//                        com.tencent.mars.xlog.Log.i(TAG,"获取认证成功 : " + res);
+//                        Gson gson = new Gson();
+//                        Result result = gson.fromJson(res, Result.class);
+//                        if( result != null && "0000".equals(result.code)){
+//                            //请求成功
+//                            //获取成功
+//                            //调用刷脸
+//                            StoreMerchanEquipmentInfoVO sm = gson.fromJson(gson.toJson(result.data),StoreMerchanEquipmentInfoVO.class);
+//
+//                            String appid = sm.appid;
+//                            String mchId = sm.mchid;
+//                            String subAppid = sm.subAppid;
+//                            String subMchid = sm.subMchid;
+//                            String storeId = sm.storeId;
+//                            String authinfo = sm.authinfo;
+//                            OrderInfoPO od = sm.oi;
+//                            String orderno = od.orderno;
+//                            String fee = od.fee;
+//                            WxFacePayUtil.doGetFaceCode(appid,mchId,subAppid,subMchid,storeId,authinfo,orderno,fee);
+//                        }else{
+//                            //请求失败
+//                            //获取失败
+//                            //重新获取
+//
+//                            WxFacePayUtil.initAuthinfo(1,amount,getApplicationContext());
+//                        }
+//                    }
+//                });
             }
         },tv, StaticConf.BackType.DEL,this.getApplicationContext());
     }
