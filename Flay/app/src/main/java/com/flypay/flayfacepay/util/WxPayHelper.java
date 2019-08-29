@@ -130,10 +130,10 @@ public class WxPayHelper {
         if (!isWxFacePay) {
             return;
         }
-        if(sRawdata != null){
-            getAuthInfo(orderNo,sRawdata);
-            return;
-        }
+        //if(sRawdata != null){
+        //    getAuthInfo(orderNo,sRawdata);
+        //    return;
+        //}
         WxPayFace.getInstance().getWxpayfaceRawdata(new IWxPayfaceCallback() {
             @Override
             public void response(Map map) throws RemoteException {
@@ -223,6 +223,8 @@ public class WxPayHelper {
         if (!TextUtils.isEmpty(facePayResult.sub_mch_id)) {
             map.put(PARAMS_SUB_MCH_ID, facePayResult.sub_mch_id);
         }
+        Gson song = new Gson();
+        Log.i(TAG,"==============获取facecode参数 :" + song.toJson(map));
         WxPayFace.getInstance().getWxpayfaceCode(map, new IWxPayfaceCallback() {
             @Override
             public void response(Map map) throws RemoteException {
