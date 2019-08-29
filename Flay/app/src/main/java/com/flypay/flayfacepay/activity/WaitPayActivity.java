@@ -51,7 +51,8 @@ public class WaitPayActivity extends BaseActivity {
                 //开启等待
                 final String amount = String.valueOf(tv.getText());
                 final Context context = getApplicationContext();
-                final AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils(context);
+                final AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils();
+                aiuiUtils.setContext(context);
                 aiuiUtils.sendMessage("需要支付" + amount + "元");
                 //去支付
                 final WxPayHelper singleton = WxPayHelper.getSingleton();
@@ -62,7 +63,7 @@ public class WaitPayActivity extends BaseActivity {
                         put("amount",amount);
                     }
                 };
-                CommonOkhttpClient.sendRequest(CommonRequest.initGetRequest(URI.HOST + URI.GETAUTHINFO, new RequestParams(params)), new Callback() {
+                CommonOkhttpClient.sendRequest(CommonRequest.initPostRequest(URI.HOST + URI.CREATORDER, new RequestParams(params)), new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
                         //结束等待

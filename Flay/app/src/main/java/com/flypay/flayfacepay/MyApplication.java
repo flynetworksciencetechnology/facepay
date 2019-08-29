@@ -3,12 +3,14 @@ package com.flypay.flayfacepay;
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.os.Environment;
 import android.os.RemoteException;
 
 import com.flypay.flayfacepay.conf.StaticConf;
 import com.flypay.flayfacepay.exception.MyException;
 import com.flypay.flayfacepay.job.ShowDialogJOB;
+import com.flypay.flayfacepay.util.AIUIUtils;
 import com.flypay.flayfacepay.util.CommonUtil;
 import com.flypay.flayfacepay.util.WxFacePayUtil;
 import com.flypay.flayfacepay.util.WxPayHelper;
@@ -27,6 +29,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,10 +49,13 @@ import okhttp3.Response;
 @SuppressLint("Registered")
 public class MyApplication extends Application {
     private static final String TAG = CommonUtil.getTag();
+    public static String param = null;
     @Override
     public void onCreate() {
         super.onCreate();
         initXlog();
+        param = getAIUIParams();
+
         //初始化设备
         final Context context = this.getApplicationContext();
         WxPayHelper singleton = WxPayHelper.getSingleton();
@@ -115,6 +121,28 @@ public class MyApplication extends Application {
         Log.i(TAG, "application terminated");
         super.onTerminate();
         Log.appenderClose();
+    }
+
+    /**
+     * 读取配置
+     */
+    public String getAIUIParams() {
+        String params = "";
+
+        AssetManager assetManager =  this.getAssets();
+        try {
+            InputStream ins = assetManager.open( "cfg/aiui.cfg" );
+            byte[] buffer = new byte[ins.available()];
+
+            ins.read(buffer);
+            ins.close();
+
+            params = new String(buffer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return params;
     }
 
 }

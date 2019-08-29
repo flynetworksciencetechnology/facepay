@@ -1,19 +1,14 @@
 package com.flypay.flayfacepay.util;
 
 import android.content.Context;
-import android.content.res.AssetManager;
-import android.os.Bundle;
-import android.widget.Toast;
 
+import com.flypay.flayfacepay.MyApplication;
 import com.iflytek.aiui.AIUIAgent;
 import com.iflytek.aiui.AIUIConstant;
 import com.iflytek.aiui.AIUIEvent;
 import com.iflytek.aiui.AIUIListener;
 import com.iflytek.aiui.AIUIMessage;
 import com.tencent.mars.xlog.Log;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 public class AIUIUtils {
 
@@ -22,11 +17,11 @@ public class AIUIUtils {
     private static AIUIAgent mAIUIAgent;
     private static AIUIListener mAIUIListener;
     private Context context;
-    public static AIUIUtils getAIUIUtils(Context context) {
-        context = context;
+    public static AIUIUtils getAIUIUtils() {
         if (mAIUIUtils == null) {
             synchronized (AIUIUtils.class) {
                 if (mAIUIUtils == null) {
+
                     mAIUIUtils = new AIUIUtils();
                 }
             }
@@ -36,26 +31,28 @@ public class AIUIUtils {
     public void setAIUIListener(AIUIListener mAIUIListener) {
         this.mAIUIListener = mAIUIListener;
     }
-
+    public void setContext(Context context){
+        this.context = context;
+        checkAIUIAgent();
+    }
     public void sendMessage(String message){
         StringBuffer params = new StringBuffer();  //构建合成参数
         params.append("vcn=xiaoyan");  //合成发音人
-        params.append(",speed=50");  //合成速度
+        params.append(",speed=30");  //合成速度
         params.append(",pitch=50");  //合成音调
-        params.append(",volume=50");  //合成音量
+        params.append(",volume=40");  //合成音量
         AIUIMessage startTts = new AIUIMessage(AIUIConstant.CMD_TTS,AIUIConstant.START, 0, params.toString(), message.getBytes());
-        checkAIUIAgent();
         mAIUIAgent.sendMessage(startTts);
     }
 
-    private boolean checkAIUIAgent(){
+    public boolean checkAIUIAgent(){
         if( null == mAIUIAgent ){
             Log.i( TAG, "create aiui agent" );
             //创建AIUIAgent
             if( mAIUIListener == null){
                 mAIUIListener = defaultAIUIListener;
             }
-            mAIUIAgent = AIUIAgent.createAgent( this.context, getAIUIParams(), mAIUIListener );
+            mAIUIAgent = AIUIAgent.createAgent( this.context, MyApplication.param, mAIUIListener );
         }
 
         if( null == mAIUIAgent ){
@@ -105,26 +102,6 @@ public class AIUIUtils {
         }
     };
 
-    /**
-     * 读取配置
-     */
-    private String getAIUIParams() {
-        String params = "";
 
-        AssetManager assetManager =  this.context.getAssets();
-        try {
-            InputStream ins = assetManager.open( "cfg/aiui.cfg" );
-            byte[] buffer = new byte[ins.available()];
-
-            ins.read(buffer);
-            ins.close();
-
-            params = new String(buffer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return params;
-    }
 
 }

@@ -3,41 +3,9 @@ package com.flypay.flayfacepay.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.KeyEvent;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.flypay.flayfacepay.R;
-import com.flypay.flayfacepay.conf.StaticConf;
-import com.flypay.flayfacepay.inputlistmonitor.PeripheralMonitor;
-import com.flypay.flayfacepay.model.OrderInfoPO;
-import com.flypay.flayfacepay.model.Result;
-import com.flypay.flayfacepay.model.StoreMerchanEquipmentInfoVO;
 import com.flypay.flayfacepay.util.CommonUtil;
-import com.flypay.flayfacepay.util.WxFacePayUtil;
-import com.flypay.flayfacepay.util.http.CommonOkhttpClient;
-import com.flypay.flayfacepay.util.http.CommonRequest;
-import com.flypay.flayfacepay.util.http.RequestParams;
-import com.flypay.flayfacepay.util.http.URI;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.iflytek.aiui.AIUIConstant;
-import com.iflytek.aiui.AIUIMessage;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.Response;
 
 public class MainActivity extends BaseActivity {
 

@@ -187,8 +187,8 @@ public class WxPayHelper {
                 Gson gson = new Gson();
                 Result result = gson.fromJson(res, Result.class);
                 if( result != null && "0000".equals(result.code)){
-                   sFacePayResult = (FacePayResult)result.data;
-                    FacePayResult facePayResult = sFacePayResult;
+                    FacePayResult facePayResult = gson.fromJson(gson.toJson(result.data),FacePayResult.class);
+                    sFacePayResult = facePayResult;
                     getFaceCode(facePayResult);
                 } else{
                     Log.e(TAG,"获取调用认证失败,请检查网络信息");
@@ -212,6 +212,7 @@ public class WxPayHelper {
         map.put(PARAMS_OUT_TRADE_NO, facePayResult.out_trade_no);
         map.put(PARAMS_TOTAL_FEE, facePayResult.total_fee);
         map.put(PARAMS_ASK_RET_PAGE,RETURN_ASK_RET_PAGE_VALUE);
+        //map.put("ignore_update_pay_result","1");
 //        if(!TextUtils.isEmpty(mPhoneNum)){
 //            map.put(PARAMS_TELEPHONE, mPhoneNum);
 //        }

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.KeyEvent;
 import android.widget.TextView;
 
+import com.flypay.flayfacepay.util.AIUIUtils;
 import com.flypay.flayfacepay.util.CommonUtil;
 import com.tencent.mars.xlog.Log;
 import com.flypay.flayfacepay.R;
@@ -66,14 +67,18 @@ public class PeripheralMonitor {
             int code = event.getKeyCode();
             Log.i(TAG,"-------------------" + code);
             //只捕获已定义按键
+            AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils();
+            aiuiUtils.setContext(context);
             if (isaKeyCode(code)) {
                 //数字
                 String payment = new ResourceConf(context).getResource(R.string.payment);
                 if( isNum(code)){
                     codeStr += (code - KeyEvent.KEYCODE_NUMPAD_0);
+                    aiuiUtils.sendMessage(String.valueOf(code - KeyEvent.KEYCODE_NUMPAD_0));
                 }else if( isDot(code)){
                     //点
                     codeStr += ".";
+                    aiuiUtils.sendMessage("点");
                 }else if( isEnter(code)){
                     //回车
                     if (listener != null) {
@@ -84,7 +89,7 @@ public class PeripheralMonitor {
                 }else if(isBack(code)){
                     //退格键
                     if(StaticConf.BackType.DEL.equals(this.type)){
-
+                        aiuiUtils.sendMessage("清空");
                         codeStr = payment;
                     }else{
                         //返回上个页面

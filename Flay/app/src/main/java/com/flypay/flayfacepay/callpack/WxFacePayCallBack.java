@@ -43,7 +43,8 @@ public class WxFacePayCallBack implements WxPayHelper.PayCallBack {
             @Override
             public void onFailure(Call call, IOException e) {
                 Log.e(TAG,"支付异常");
-                AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils(context);
+                AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils();
+                aiuiUtils.setContext(context);
                 aiuiUtils.sendMessage("支付失败");
             }
 
@@ -51,15 +52,19 @@ public class WxFacePayCallBack implements WxPayHelper.PayCallBack {
             public void onResponse(Call call, Response response) throws IOException {
                 //结束等待
                 String string = response.body().string();
-                Log.i(TAG,"支付结果 :" + string);
+                Log.e(TAG,"支付结果 :" + string);
                 Gson gson = new Gson();
                 Result result = gson.fromJson(string, Result.class);
                 String payResult = WxPayHelper.RETURN_ERROR;
+                AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils();
+                aiuiUtils.setContext(context);
                 if( result != null && "0000".equals(result.code)){
                     //支付成功
-                    AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils(context);
+
                     aiuiUtils.sendMessage("支付成功");
                     payResult = WxPayHelper.RETURN_SUCCESS;
+                }else{
+                    aiuiUtils.sendMessage("支付失败" + result.message);
                 }
                 WxPayHelper singleton = WxPayHelper.getSingleton();
                 singleton.updateResult(payResult);
@@ -69,13 +74,15 @@ public class WxFacePayCallBack implements WxPayHelper.PayCallBack {
 
     @Override
     public void payCancel(String failMsg) {
-        AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils(context);
+        AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils();
+        aiuiUtils.setContext(context);
         aiuiUtils.sendMessage("支付失败");
     }
 
     @Override
     public void interfaceFail() {
-        AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils(context);
+        AIUIUtils aiuiUtils = AIUIUtils.getAIUIUtils();
+        aiuiUtils.setContext(context);
         aiuiUtils.sendMessage("支付失败");
     }
     private static final String TAG = CommonUtil.getTag();
